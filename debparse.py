@@ -16,10 +16,30 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys, os
+import sqlite3
 
 class DebParser:
     def __init__(self):
         self.packages = {}
+        self.dbfile = 'debian.sqlite'
+        if not os.path.exists(self.dbfile):
+            self.create_db()
+        self.conn = sqlite3.connect(self.dbfile)
+
+    def create_db(self):
+        conn = sqlite3.connect(self.dbfile)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE bin_packages(
+        name TEXT NOT NULL PRIMARY KEY
+        );''')
+        c.execute('''CREATE TABLE depends(
+        name TEXT NOT NULL,
+        dependency TEXT NOT NULL,
+        FOREIGN KEY(name) REFERENCES bin_packages(name),
+        FOREIGN KEY(dependency) REFERENCES bin_packages(name)
+        );''')
+        conn.commit()
+        conn.close()
 
     def parse(self, fname):
         current = {}
@@ -34,6 +54,18 @@ class DebParser:
                 k, v = line.split(':', 1)
                 current[k] = v.strip()
 
+    def to_db(self):
+        c = self.conn.cursor()
+        for name in self.packages.keys():
+            c.execute('INSERT INTO bin_packages VALUES(?);', (name,))
+        self.conn.commit()
+        for name, package in self.packages.items():
+            if 'Depends' not in package:
+                continue
+            for depstr in package['Depends'].split(','):
+                dep = depstr.split('(')[0].strip()
+                c.execute('INSERT INTO depends VALUES(?, ?);', (name, dep))
+        self.conn.commit()
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -41,4 +73,5 @@ if __name__ == '__main__':
         sys.exit(0)
     debparser = DebParser()
     debparser.parse(sys.argv[1])
-    print(debparser.packages['xwayland'])
+    debparser.to_db()
+
