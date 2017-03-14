@@ -30,7 +30,8 @@ class DebParser:
         conn = sqlite3.connect(self.dbfile)
         c = conn.cursor()
         c.execute('''CREATE TABLE bin_packages(
-        name TEXT NOT NULL PRIMARY KEY
+        name TEXT NOT NULL PRIMARY KEY,
+        version TEXT NOT NULL
         );''')
         c.execute('''CREATE TABLE depends(
         name TEXT NOT NULL,
@@ -56,8 +57,8 @@ class DebParser:
 
     def to_db(self):
         c = self.conn.cursor()
-        for name in self.packages.keys():
-            c.execute('INSERT INTO bin_packages VALUES(?);', (name,))
+        for name, p in self.packages.items():
+            c.execute('INSERT INTO bin_packages VALUES(?, ?);', (name, p['Version']))
         self.conn.commit()
         for name, package in self.packages.items():
             if 'Depends' not in package:
