@@ -25,6 +25,9 @@ class DebParser:
         if not os.path.exists(self.dbfile):
             self.create_db()
         self.conn = sqlite3.connect(self.dbfile)
+        c = self.conn.cursor()
+        c.execute('PRAGMA foreign_keys = ON;')
+        self.conn.commit()
 
     def create_db(self):
         conn = sqlite3.connect(self.dbfile)
