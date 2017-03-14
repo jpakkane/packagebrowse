@@ -24,14 +24,21 @@ class DbQuery:
     def simple(self, packagename):
         c = self.conn.cursor()
         print('Dependencies of', packagename)
-        c.execute('SELECT dependency FROM depends WHERE name = ?;', (packagename,))
+        c.execute('SELECT dependency FROM depends WHERE name = ? ORDER BY dependency;', (packagename,))
         for d in c.fetchall():
             print(' ' + d[0])
 
         print('Reverse dependencies of', packagename)
-        c.execute('SELECT DISTINCT name FROM depends WHERE dependency = ?;', (packagename, ))
+        c.execute('SELECT DISTINCT name FROM depends WHERE dependency = ? ORDER BY name;', (packagename, ))
         for d in c.fetchall():
             print(' ' + d[0])
+
+    def stats(self):
+        c = self.conn.cursor()
+        c.execute('SELECT COUNT(*) FROM bin_packages;')
+        print('%s packages' % c.fetchone()[0])
+        c.execute('SELECT COUNT(*) FROM depends;')
+        print('%s dependencies' % c.fetchone()[0])
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
@@ -39,5 +46,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     db = DbQuery(sys.argv[1])
+    db.stats()
     db.simple(sys.argv[2])
-
+    
