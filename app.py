@@ -83,8 +83,8 @@ def show_src(package_name):
 @app.route('/show_bin/<package_name>')
 def show_bin(package_name):
     pkg = db.binary_package_info(package_name)
-    templ = '''<html><head></head><body><h1>Binary package %s</h1>
-    <p>Version: %s</p>
+    templ = '''<html><head></head><body><h1>Binary package %s %s</h1>
+    <p>%s</p>
     <p>Source package: <a href="/show_src/%s">%s</a></p>
     <h2>Dependencies</h2>
     <p><ul>%s</ul></p>
@@ -108,7 +108,7 @@ def show_bin(package_name):
     rdeps = [rdep_templ % (p[0], p[0]) for p in rdep_pkgs]
     bdeps = [bdep_templ % (p[0], p[0]) for p in bdep_pkgs]
     rbdeps = [bdep_templ % (p, p) for p in rbdep_pkgs]
-    return templ % (pkg.name, pkg.version, src_pkg, src_pkg, ' '.join(deps),
+    return templ % (pkg.name, pkg.version, pkg.description, src_pkg, src_pkg, ' '.join(deps),
                     ' '.join(rdeps), ' '.join(bdeps), ' '.join(rbdeps))
 
 if __name__ == '__main__':

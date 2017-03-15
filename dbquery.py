@@ -37,6 +37,7 @@ class DbQuery:
         print('Build-dependencies of', packagename)
         for d in self.build_deps_for_src(src_name):
             print(' ' + d[0])
+
         print('Reverse build-dependencies of', packagename)
         for d in self.reverse_build_deps_of(packagename):
             print(' ' + d)
@@ -114,4 +115,4 @@ if __name__ == '__main__':
     db = DbQuery(sys.argv[1])
     db.stats()
     db.simple(sys.argv[2])
-    
+
