@@ -56,6 +56,16 @@ class DbQuery:
         c.execute('SELECT COUNT(*) FROM build_depends;')
         print('%s build dependencies' % c.fetchone()[0])
 
+    def search_source_packages(self, term):
+        c = self.conn.cursor()
+        c.execute('SELECT name from src_packages WHERE name LIKE ?;', (term + '%',))
+        return c.fetchall()
+
+    def search_binary_packages(self, term):
+        c = self.conn.cursor()
+        c.execute('SELECT name from bin_packages WHERE name LIKE ?;', (term + '%',))
+        return c.fetchall()
+
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         print('%s dbfile packagename' % sys.argv[0])
