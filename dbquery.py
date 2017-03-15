@@ -55,7 +55,8 @@ class DbQuery:
     def reverse_build_deps_of(self, bin_package):
         c = self.conn.cursor()
         c.execute('''SELECT binary_package FROM src_to_bin WHERE source_package IN
-        (SELECT DISTINCT source_package FROM build_depends WHERE binary_package = ?);''', (bin_package,))
+        (SELECT DISTINCT source_package FROM build_depends WHERE binary_package = ?)
+        ORDER BY binary_package;''', (bin_package,))
         return [i[0] for i in c.fetchall()]
 
     def stats(self):
@@ -76,18 +77,24 @@ class DbQuery:
 
     def search_binary_packages(self, term):
         c = self.conn.cursor()
-        c.execute('SELECT name from bin_packages WHERE name LIKE ?;', (term + '%',))
+        c.execute('SELECT name FROM bin_packages WHERE name LIKE ?;', (term + '%',))
         return c.fetchall()
 
     def build_deps_for_src(self, source_package_name):
         c = self.conn.cursor()
-        c.execute('SELECT binary_package, version FROM build_depends WHERE source_package = ?;', (source_package_name,))
+        c.execute('''SELECT binary_package, version
+        FROM build_depends
+        WHERE source_package = ?
+        ORDER BY binary_package;''', (source_package_name,))
         pdep = c.fetchall()
         return pdep
 
     def deps_for_binary(self, binary_package_name):
         c = self.conn.cursor()
-        c.execute('SELECT dependency, version FROM depends WHERE name = ?;', (binary_package_name,))
+        c.execute('''SELECT dependency, version
+        FROM depends
+        WHERE name = ?
+        ORDER BY dependency;''', (binary_package_name,))
         pdep = c.fetchall()
         return pdep
 

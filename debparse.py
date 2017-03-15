@@ -30,7 +30,7 @@ def split_depends(dep_entry):
         depname = depsplit[0].strip()
         if depname != '':
             result.append((depname, version))
-        return result
+    return result
 
 
 class BinaryPackage:
