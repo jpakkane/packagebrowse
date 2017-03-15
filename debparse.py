@@ -32,19 +32,36 @@ def split_depends(dep_entry):
             result.append((depname, version))
         return result
 
+
 class BinaryPackage:
-    def __init__(self, pdict):
-        self.name = pdict['Package']
-        self.version = pdict['Version']
-        self.description = pdict['Description']
-        self.depends = split_depends(pdict.get('Depends', ''))
+    def __init__(self, name, version, description, depends):
+        self.name = name
+        self.version = version
+        self.description = description
+        self.depends = depends
+
+    @classmethod
+    def from_dict(cls, pdict):
+        name = pdict['Package']
+        version = pdict['Version']
+        description = pdict['Description']
+        depends = split_depends(pdict.get('Depends', ''))
+        return BinaryPackage(name, version, description, depends)
 
 class SourcePackage:
-    def __init__(self, pdict):
-        self.name = pdict['Package']
-        self.version = pdict['Version']
-        self.binaries = [x.strip() for x in pdict['Binary'].split(',')]
-        self.build_depends = split_depends(pdict.get('Build-Depends', ''))
+    def __init__(self, name, version, binaries, build_depends):
+        self.name = name
+        self.version = version
+        self.binaries = binaries
+        self.build_depends = build_depends
+
+    @classmethod
+    def from_dict(cls, pdict):
+        name = pdict['Package']
+        version = pdict['Version']
+        binaries = [x.strip() for x in pdict['Binary'].split(',')]
+        build_depends = split_depends(pdict.get('Build-Depends', ''))
+        return SourcePackage(name, version, binaries, build_depends)
 
 class DebParser:
     def __init__(self, dbfile):
@@ -116,10 +133,10 @@ class DebParser:
 
     def parse(self, bin_fname, src_fname):
         for packagedict in self.parse_debfile(bin_fname):
-            bp = BinaryPackage(packagedict)
+            bp = BinaryPackage.from_dict(packagedict)
             self.bin_packages.append(bp)
         for spkgdict in self.parse_debfile(src_fname):
-            sp = SourcePackage(spkgdict)
+            sp = SourcePackage.from_dict(spkgdict)
             self.src_packages.append(sp)
 
     def to_db(self):

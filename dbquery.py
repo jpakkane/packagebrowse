@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys, sqlite3
+import debparse
 
 class DbQuery:
     def __init__(self, dbfile):
@@ -36,8 +37,7 @@ class DbQuery:
             print(' ' + d[0])
 
         print('Build-dependencies of', packagename)
-        c.execute('SELECT binary_package FROM build_depends WHERE source_package = ?', (src_name,))
-        for d in c.fetchall():
+        for d in self.build_deps_for_src(src_name):
             print(' ' + d[0])
         print('Reverse build-dependencies of', packagename)
         c.execute('''SELECT binary_package FROM src_to_bin WHERE source_package IN
@@ -65,6 +65,21 @@ class DbQuery:
         c = self.conn.cursor()
         c.execute('SELECT name from bin_packages WHERE name LIKE ?;', (term + '%',))
         return c.fetchall()
+
+    def build_deps_for_src(self, source_package_name):
+        c = self.conn.cursor()
+        c.execute('SELECT binary_package, version FROM build_depends WHERE source_package = ?;', (source_package_name,))
+        pdep = c.fetchall()
+        return pdep
+
+    def source_package_info(self, package_name):
+        c = self.conn.cursor()
+        c.execute('SELECT * FROM src_packages WHERE name = ?;', (package_name,))
+        parr = c.fetchone()
+        c.execute('SELECT binary_package FROM src_to_bin WHERE source_package = ?;', (package_name,))
+        binarr = [i[0] for i in c.fetchall()]
+        pdep = self.build_deps_for_src(package_name)
+        return debparse.SourcePackage(parr[0], parr[1], binarr, pdep)
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:

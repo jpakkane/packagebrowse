@@ -17,7 +17,6 @@
 
 from flask import Flask
 from flask import request
-
 import dbquery
 
 app = Flask(__name__)
@@ -64,6 +63,22 @@ def search():
     bin_packages = db.search_binary_packages(request.form['name'])
     bin_lines = [res_templ % ('show_bin', x[0], x[0]) for x in bin_packages]
     return templ % (' '.join(src_lines), ' '.join(bin_lines))
+
+@app.route('/show_src/<package_name>')
+def show_src(package_name):
+    pkg = db.source_package_info(package_name)
+    templ = '''<html><head></head><body><h1>%s</h1>
+    <p>Version: %s</p>
+    <h2>Binary packages generated from this package</h2>
+    <p><ul>%s</ul></p>
+    <h2>Build dependencies</h2>
+    <p><ul>%s</ul></p>
+<hr><a href="/">Back to front page</a></p>
+</body></html>'''
+    line_templ = '<li><a href="show_bin/%s">%s</a></li>\n'
+    bins = [line_templ % (p, p) for p in pkg.binaries]
+    builddeps = [line_templ % (p[0], p[0]) for p in pkg.build_depends]
+    return templ % (pkg.name, pkg.version, ' '.join(bins), ' '.join(builddeps))
 
 if __name__ == '__main__':
     app.run()
