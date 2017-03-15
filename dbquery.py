@@ -24,16 +24,14 @@ class DbQuery:
 
     def simple(self, packagename):
         c = self.conn.cursor()
-        c.execute('''SELECT source_package FROM src_to_bin WHERE binary_package = ?''', (packagename,))
-        src_name = c.fetchone()[0]
+        src_name = self.source_package_of(packagename)
         print('Dependencies of', packagename)
         c.execute('SELECT dependency FROM depends WHERE name = ? ORDER BY dependency;', (packagename,))
         for d in c.fetchall():
             print(' ' + d[0])
 
         print('Reverse dependencies of', packagename)
-        c.execute('SELECT DISTINCT name FROM depends WHERE dependency = ? ORDER BY name;', (packagename, ))
-        for d in c.fetchall():
+        for d in self.reverse_deps_of(packagename):
             print(' ' + d[0])
 
         print('Build-dependencies of', packagename)
@@ -44,6 +42,16 @@ class DbQuery:
         (SELECT DISTINCT source_package FROM build_depends WHERE binary_package = ?);''', (packagename,))
         for d in c.fetchall():
             print(' ' + d[0])
+    
+    def source_package_of(self, bin_package):
+        c = self.conn.cursor()
+        c.execute('''SELECT source_package FROM src_to_bin WHERE binary_package = ?''', (bin_package,))
+        return c.fetchone()[0]
+
+    def reverse_deps_of(self, bin_package):
+        c = self.conn.cursor()
+        c.execute('SELECT DISTINCT name, version FROM depends WHERE dependency = ? ORDER BY name;', (bin_package, ))
+        return c.fetchall()
 
     def stats(self):
         c = self.conn.cursor()
@@ -72,6 +80,12 @@ class DbQuery:
         pdep = c.fetchall()
         return pdep
 
+    def deps_for_binary(self, binary_package_name):
+        c = self.conn.cursor()
+        c.execute('SELECT dependency, version FROM depends WHERE name = ?;', (binary_package_name,))
+        pdep = c.fetchall()
+        return pdep
+
     def source_package_info(self, package_name):
         c = self.conn.cursor()
         c.execute('SELECT * FROM src_packages WHERE name = ?;', (package_name,))
@@ -80,6 +94,13 @@ class DbQuery:
         binarr = [i[0] for i in c.fetchall()]
         pdep = self.build_deps_for_src(package_name)
         return debparse.SourcePackage(parr[0], parr[1], binarr, pdep)
+
+    def binary_package_info(self, package_name):
+        c = self.conn.cursor()
+        c.execute('SELECT * FROM bin_packages WHERE name = ?;', (package_name,))
+        parr = c.fetchone()
+        deps = self.deps_for_binary(package_name)
+        return debparse.BinaryPackage(parr[0], parr[1], parr[2], deps)
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:

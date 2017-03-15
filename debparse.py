@@ -92,6 +92,7 @@ class DebParser:
         FOREIGN KEY(name) REFERENCES bin_packages(name),
         FOREIGN KEY(dependency) REFERENCES bin_packages(name)
         );''') # FIXME add uniquenes constraint to this and the one below.
+        # ALSO, version should be non-NULL.
         
         # Tables for source packages
         c.execute('''CREATE TABLE src_packages(
