@@ -90,16 +90,21 @@ def show_bin(package_name):
     <p><ul>%s</ul></p>
     <h2>Reverse dependencies</h2>
     <p><ul>%s</ul></p>
+    <h2>Build dependencies</h2>
+    <p><ul>%s</ul></p>
 <hr><a href="/">Back to front page</a></p>
 </body></html>'''
     dep_templ = '<li><a href="/show_bin/%s">%s</a></li>\n'
     rdep_templ = '<li><a href="/show_bin/%s">%s</a></li>\n'
+    bdep_templ = '<li><a href="/show_bin/%s">%s</a></li>\n'
     src_pkg = db.source_package_of(package_name)
     rdep_pkgs = db.reverse_deps_of(package_name)
+    bdep_pkgs = db.build_deps_for_src(src_pkg)
     deps = [dep_templ % (p[0], p[0]) for p in pkg.depends]
     rdeps = [rdep_templ % (p[0], p[0]) for p in rdep_pkgs]
+    bdeps = [bdep_templ % (p[0], p[0]) for p in bdep_pkgs]
     return templ % (pkg.name, pkg.version, src_pkg, src_pkg, ' '.join(deps),
-                    ' '.join(rdeps))
+                    ' '.join(rdeps), ' '.join(bdeps))
 
 if __name__ == '__main__':
     app.run()
