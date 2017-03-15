@@ -23,6 +23,8 @@ class DbQuery:
 
     def simple(self, packagename):
         c = self.conn.cursor()
+        c.execute('''SELECT source_package FROM src_to_bin WHERE binary_package = ?''', (packagename,))
+        src_name = c.fetchone()[0]
         print('Dependencies of', packagename)
         c.execute('SELECT dependency FROM depends WHERE name = ? ORDER BY dependency;', (packagename,))
         for d in c.fetchall():
@@ -33,12 +35,26 @@ class DbQuery:
         for d in c.fetchall():
             print(' ' + d[0])
 
+        print('Build-dependencies of', packagename)
+        c.execute('SELECT binary_package FROM build_depends WHERE source_package = ?', (src_name,))
+        for d in c.fetchall():
+            print(' ' + d[0])
+        print('Reverse build-dependencies of', packagename)
+        c.execute('''SELECT binary_package FROM src_to_bin WHERE source_package IN
+        (SELECT DISTINCT source_package FROM build_depends WHERE binary_package = ?);''', (packagename,))
+        for d in c.fetchall():
+            print(' ' + d[0])
+
     def stats(self):
         c = self.conn.cursor()
         c.execute('SELECT COUNT(*) FROM bin_packages;')
         print('%s packages' % c.fetchone()[0])
         c.execute('SELECT COUNT(*) FROM depends;')
         print('%s dependencies' % c.fetchone()[0])
+        c.execute('SELECT COUNT(*) FROM src_packages;')
+        print('%s source packages' % c.fetchone()[0])
+        c.execute('SELECT COUNT(*) FROM build_depends;')
+        print('%s build dependencies' % c.fetchone()[0])
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
