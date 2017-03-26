@@ -63,6 +63,44 @@ class SourcePackage:
         build_depends = split_depends(pdict.get('Build-Depends', ''))
         return SourcePackage(name, version, binaries, build_depends)
 
+def create_tables(conn):
+    c = conn.cursor()
+
+    # Tables for binary packages
+    c.execute('''CREATE TABLE bin_packages(
+    name TEXT NOT NULL PRIMARY KEY,
+    version TEXT NOT NULL,
+    description TEXT NOT NULL
+    );''')
+    c.execute('''CREATE TABLE depends(
+    name TEXT NOT NULL,
+    dependency TEXT NOT NULL,
+    version TEXT NOT NULL,
+    FOREIGN KEY(name) REFERENCES bin_packages(name),
+    FOREIGN KEY(dependency) REFERENCES bin_packages(name)
+    );''') # FIXME add uniquenes constraint to this and the one below.
+
+    # Tables for source packages
+    c.execute('''CREATE TABLE src_packages(
+    name TEXT NOT NULL PRIMARY KEY,
+    version TEXT NOT NULL
+    );''')
+    c.execute('''CREATE TABLE src_to_bin (
+    source_package TEXT NOT NULL,
+    binary_package TEXT NOT NULL,
+    FOREIGN KEY(source_package) REFERENCES src_packages(name),
+    FOREIGN KEY(binary_package) REFERENCES bin_packages(name)
+    );''')
+    c.execute('''CREATE TABLE build_depends(
+    source_package TEXT NOT NULL,
+    binary_package TEXT NOT NULL,
+    version TEXT NOT NULL,
+    FOREIGN KEY(source_package) REFERENCES src_packages(name),
+    FOREIGN KEY(binary_package) REFERENCES bin_packages(name)
+    );''')
+    conn.commit()
+    conn.close()
+
 class DebParser:
     def __init__(self, dbfile):
         self.bin_packages = []
@@ -77,43 +115,7 @@ class DebParser:
 
     def create_db(self):
         conn = sqlite3.connect(self.dbfile)
-        c = conn.cursor()
-        
-        # Tables for binary packages
-        c.execute('''CREATE TABLE bin_packages(
-        name TEXT NOT NULL PRIMARY KEY,
-        version TEXT NOT NULL,
-        description TEXT NOT NULL
-        );''')
-        c.execute('''CREATE TABLE depends(
-        name TEXT NOT NULL,
-        dependency TEXT NOT NULL,
-        version TEXT,
-        FOREIGN KEY(name) REFERENCES bin_packages(name),
-        FOREIGN KEY(dependency) REFERENCES bin_packages(name)
-        );''') # FIXME add uniquenes constraint to this and the one below.
-        # ALSO, version should be non-NULL.
-        
-        # Tables for source packages
-        c.execute('''CREATE TABLE src_packages(
-        name TEXT NOT NULL PRIMARY KEY,
-        version TEXT NOT NULL
-        );''')
-        c.execute('''CREATE TABLE src_to_bin (
-        source_package TEXT NOT NULL,
-        binary_package TEXT NOT NULL,
-        FOREIGN KEY(source_package) REFERENCES src_packages(name),
-        FOREIGN KEY(binary_package) REFERENCES bin_packages(name)
-        );''')
-        c.execute('''CREATE TABLE build_depends(
-        source_package TEXT NOT NULL,
-        binary_package TEXT NOT NULL,
-        version TEXT,
-        FOREIGN KEY(source_package) REFERENCES src_packages(name),
-        FOREIGN KEY(binary_package) REFERENCES bin_packages(name)
-        );''')
-        conn.commit()
-        conn.close()
+        create_tables(conn)
 
     def parse_debfile(self, fname):
         packages = []
@@ -183,9 +185,12 @@ class DebParser:
                 try:
                     basename = dep[0].split()[0]
                     basename = basename.split(':')[0]
-                    c.execute('INSERT INTO build_depends VALUES(?, ?, ?);', (package.name, basename, dep[1]))
+                    depver = dep[1]
+                    if depver is None:
+                        depver = ''
+                    c.execute('INSERT INTO build_depends VALUES(?, ?, ?);', (package.name, basename, depver))
                 except sqlite3.Error as e:
-                    print('Missing dep', dep[0])
+                    print('Missing build-dep', basename)
                     pass
         self.conn.commit()
 
