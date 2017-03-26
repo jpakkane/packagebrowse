@@ -181,17 +181,19 @@ class DebParser:
         for package in self.src_packages:
             for dep in package.build_depends:
                 try:
-                    c.execute('INSERT INTO build_depends VALUES(?, ?, ?);', (package.name, dep[0], dep[1]))
+                    basename = dep[0].split()[0]
+                    basename = basename.split(':')[0]
+                    c.execute('INSERT INTO build_depends VALUES(?, ?, ?);', (package.name, basename, dep[1]))
                 except sqlite3.Error as e:
                     print('Missing dep', dep[0])
                     pass
         self.conn.commit()
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print('%s <binary package file> <source package file>' % sys.argv[0])
+    if len(sys.argv) != 4:
+        print('%s <db file> <binary package file> <source package file>' % sys.argv[0])
         sys.exit(0)
-    debparser = DebParser('debian.sqlite')
-    debparser.parse(sys.argv[1], sys.argv[2])
+    debparser = DebParser(sys.argv[1])
+    debparser.parse(sys.argv[2], sys.argv[3])
     debparser.to_db()
 
