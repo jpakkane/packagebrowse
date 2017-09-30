@@ -28,10 +28,11 @@ def calculate_closure(dbfile, root_package):
 
     round = 0
     while len(bin_to_process) > 0:
-        print('Round', round)
         round += 1
-        print('Binary packages:', len(binary_packages))
-        print('Binary remaining:', len(bin_to_process))
+        if round % 100 == 0:
+            print('Round', round)
+            print('Binary packages:', len(binary_packages))
+            print('Binary remaining:', len(bin_to_process))
         if len(bin_to_process) > 0:
             p = bin_to_process.pop()
             processed_bins.add(p)
@@ -60,7 +61,7 @@ def calculate_closure(dbfile, root_package):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print('%s <db file>' % sys.argv[0])
+    if len(sys.argv) != 3:
+        print('%s <db file> <package>' % sys.argv[0])
         sys.exit(0)
-    calculate_closure(sys.argv[1], 'qtdeclarative5-dev')
+    calculate_closure(sys.argv[1], sys.argv[2])
