@@ -41,11 +41,16 @@ class DbQuery:
         print('Reverse build-dependencies of', packagename)
         for d in self.reverse_build_deps_of(packagename):
             print(' ' + d)
-    
+
     def source_package_of(self, bin_package):
         c = self.conn.cursor()
         c.execute('''SELECT DISTINCT source_package FROM src_to_bin WHERE binary_package = ?''', (bin_package,))
         return c.fetchone()[0]
+
+    def binary_packages_of(self, source_package):
+        c = self.conn.cursor()
+        c.execute('''SELECT DISTINCT binary_package FROM src_to_bin WHERE source_package = ?''', (source_package,))
+        return c.fetchall()
 
     def reverse_deps_of(self, bin_package):
         c = self.conn.cursor()
